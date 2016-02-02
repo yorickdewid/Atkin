@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "prime.h"
 
@@ -44,17 +45,35 @@ uint64_t atoull(char *s) {
 	return result;
 }
 
+void usage(const char *name) {
+	printf("%s [-mn]\n\n", name);
+	printf(" -m <min>\tStart at min value\n");
+	printf(" -n <max>\tStop when max is reached\n");
+	printf(" -h\t\tThis help\n");
+}
+
 int main(int argc, char *argv[]) {
 	primegen pg;
+	opterr = 0;
 	uint32_t digits[64];
 	uint64_t low = 2;
 	uint64_t high = 1000000000;
+	int c;
 
-	if (argc > 1) {
-		low = atoull(argv[1]);
-		if (argv[2])
-			high = atoull(argv[2]);
-	}
+	while ((c = getopt(argc, argv, "m:n:")) != -1)
+		switch (c) {
+			case 'm':
+				low = atoull(optarg);
+				break;
+			case 'n':
+				high = atoull(optarg);
+				break;
+			case 'h':
+			case '?':
+			default:
+				usage(argv[0]);
+				return 1;
+		}
 
 	primegen_init(&pg);
 	primegen_skipto(&pg, low);
@@ -74,6 +93,9 @@ int main(int argc, char *argv[]) {
 
 		uint32_t u = primegen_next(&pg) - p;
 		p += u;
+
+		if (p > high)
+			break;
 
 		for (i = 0; u; ++i) {
 			u += digits[i];
